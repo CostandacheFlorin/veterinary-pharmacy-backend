@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const HttpError = require("../models/http-error");
 const User = require("../models/User");
+require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 const login = async (req, res, next) => {
@@ -47,7 +48,7 @@ const login = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: existingUser.id, username: existingUser.username },
-      "supersecret",
+      process.env.JWT_KEY,
       { expiresIn: "3h" }
     );
   } catch (err) {
@@ -125,7 +126,7 @@ const signup = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: createdUser.id, username: createdUser.username },
-      "supersecret",
+      process.env.JWT_KEY,
       { expiresIn: "3h" }
     );
   } catch (err) {
@@ -136,14 +137,65 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
-  res
-    .status(201)
-    .json({
-      userId: createdUser.id,
-      username: createdUser.username,
-      token: token,
-    });
+  res.status(201).json({
+    userId: createdUser.id,
+    username: createdUser.username,
+    token: token,
+  });
+};
+
+const getUsernameById = async (req, res, next) => {
+  const userID = req.params.userid;
+
+  let user;
+
+  try {
+    user = await User.findById(userID, "-_id -__v");
+    console.log(user);
+  } catch (err) {
+    return next(err);
+  }
+
+  res.status(200).json({ username: user.username });
+};
+
+const getUsernameByIdUtil = async (userId) => {
+  const userID = userId;
+
+  let user;
+
+  try {
+    user = await User.findById(userID, "-_id -__v");
+    console.log(user);
+  } catch (err) {
+    console.log(err);
+  }
+
+  return { username: user.username };
+};
+
+const getAllUsers = async (req, res, next) => {
+  let users;
+  let totalUsers;
+  try {
+    users = await User.find({});
+    totalUsers = await User.count({});
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching users failed,please try again later.",
+      500
+    );
+    return next(error);
+  }
+
+  res.json({
+    users: users.map((user) => user.toObject({ getters: true })),
+    total: totalUsers,
+  });
 };
 
 exports.login = login;
 exports.signup = signup;
+exports.getUsernameByid = getUsernameById;
+exports.getUsernameByIdUtil = getUsernameByIdUtil;
+exports.getAllUsers = getAllUsers;

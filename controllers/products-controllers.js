@@ -2,31 +2,55 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
 const Product = require("../models/Product");
+const fs = require("fs");
 
+const getAllProducts = async (req, res, next) => {
+  let products;
+  let totalProducts;
+  try {
+    products = await Product.find({});
+    totalProducts = await Product.count({});
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching products failed,please try again later.",
+      500
+    );
+    return next(error);
+  }
+  res.json({
+    products: products.map((product) => product.toObject({ getters: true })),
+    total: totalProducts,
+  });
+};
 
+const getAllProductsNames = async (req, res, next) => {
+  let products;
+  let totalProducts;
+  try {
+    products = await Product.find({}).select("name");
+    totalProducts = await Product.count({});
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching products failed,please try again later.",
+      500
+    );
+    return next(error);
+  }
+  res.json({
+    products: products.map((product) => product.toObject({ getters: true })),
+    total: totalProducts,
+  });
+};
 
-const getAllProducts = async (req,res,next) => {
-    let products;
-    try {
-        products = await Product.find({});
-    }catch (err) {
-        const error = new HttpError(
-            'Fetching products failed,please try again later.', 500
-        );
-        return next(error);
-    }
-    res.json({products: products.map(product => product.toObject({getters:true}))});
-}
-
-const getProductById = async (req, res, next) => {
-  const productId = req.params.productid;
+const getProductByName = async (req, res, next) => {
+  const productName = req.params.productname;
   let product;
 
   try {
-    product = await Product.findById(productId);
+    product = await Product.findOne({ name: productName });
   } catch (err) {
     const error = new HttpError(
-      "Could not find the product with the provided id.",
+      "Could not find the product with the provided name.",
       500
     );
     return next(error);
@@ -34,48 +58,79 @@ const getProductById = async (req, res, next) => {
 
   if (!product) {
     const error = new HttpError(
-      "Could not find a product for the provided id.",
+      "Could not find a product for the provided name.",
       404
     );
-    returnnext(error);
+    return next(error);
   }
   res.json({ product: product.toObject({ getters: true }) });
 };
 
+
+const getProductImageByName = async (req,res,next) => {
+
+  const productName = req.params.productname;
+  let product;
+
+  try {
+    product = await Product.findOne({ name: productName });
+  } catch (err) {
+    const error = new HttpError(
+      "Could not find the product with the provided name.",
+      500
+    );
+    return next(error);
+  }
+
+  if (!product) {
+    const error = new HttpError(
+      "Could not find a product for the provided name.",
+      404
+    );
+    return next(error);
+  }
+  res.json({ image: product.image });
+
+
+
+}
+
 const addProduct = async (req, res, next) => {
   const errors = validationResult(req);
+  console.log(req.file);
+  console.log(req.file.path);
 
   if (!errors.isEmpty()) {
     console.log(errors);
-    throw new HttpError("Invalid inputs passed, please check your data", 422);
+    const error = new HttpError(
+      "Invalid inputs passed, please check your data",
+      422
+    );
+    return next(error);
   }
-  const {
-    name,
-    price,
-    category,
-    subcategory,
-    description,
-    usage,
-    species,
-    ingredients,
-  } = req.body;
+  const { name, price, description, usage, species, ingredients } = req.body;
+
+  console.log(ingredients);
 
   const createdProduct = new Product({
     name,
     description,
     price,
-    image:
-      "https://petchemist.com.au/product_images/uploaded_images/cat-health-care-collection.jpg",
-    category,
-    subcategory,
+    image: req.file.path,
     usage,
-    species,
-    ingredients,
+    species: JSON.parse(species),
+    ingredients: JSON.parse(ingredients),
+    category: "med",
   });
 
   try {
     await createdProduct.save();
   } catch (err) {
+    if (err.code === 11000) {
+      const error = new HttpError("The product name is already used", 500);
+      return next(error);
+    }
+
     const error = new HttpError(
       "Creating the product failed, please try again.",
       500
@@ -87,8 +142,10 @@ const addProduct = async (req, res, next) => {
   res.status(201).json({ product: createdProduct });
 };
 
-const editProductById = async (req, res, next) => {
+const editProductByName = async (req, res, next) => {
   const errors = validationResult(req);
+
+  console.log(req.body.name);
 
   if (!errors.isEmpty()) {
     console.log(errors);
@@ -98,8 +155,8 @@ const editProductById = async (req, res, next) => {
   const {
     name,
     price,
-    category,
-    subcategory,
+    // category,
+    // subcategory,
     description,
     usage,
     species,
@@ -111,7 +168,7 @@ const editProductById = async (req, res, next) => {
   let product;
 
   try {
-    product = await Product.findById(productid);
+    product = await Product.findOne({ name: productid });
   } catch (err) {
     const error = new HttpError(
       " Something went wrong while trying to edit the product, product not found",
@@ -120,14 +177,17 @@ const editProductById = async (req, res, next) => {
     return next(error);
   }
 
+  console.log(name);
+
+  console.log(product);
+
   product.name = name;
-  product.category = category;
-  product.subcategory = subcategory;
-  product.description = description;
   product.description = description;
   product.usage = usage;
+
   product.species = species;
   product.ingredients = ingredients;
+
   product.price = price;
   try {
     await product.save();
@@ -148,7 +208,7 @@ const deleteProductById = async (req, res, next) => {
   let product;
 
   try {
-    product = await Product.findById(productid);
+    product = await Product.find(productid);
   } catch (err) {
     const error = new HttpError(
       "Could not find the product you want to delete.",
@@ -170,8 +230,29 @@ const deleteProductById = async (req, res, next) => {
   res.status(200).json({ message: "Product deleted." });
 };
 
-exports.getProductById = getProductById;
+const deleteProductByName = async (req, res, next) => {
+  const productname = req.params.productname;
+
+  let product;
+
+  try {
+    product = await Product.find({ name: productname }).deleteOne().exec();
+  } catch (err) {
+    const error = new HttpError(
+      "Could not find the product you want to delete.",
+      500
+    );
+    return next(error);
+  }
+
+  res.status(200).json({ message: "Product deleted." });
+};
+
+exports.getProductByName = getProductByName;
 exports.addProduct = addProduct;
-exports.editProductById = editProductById;
+exports.getProductImageByName = getProductImageByName;
+exports.editProductByName = editProductByName;
 exports.deleteProductById = deleteProductById;
 exports.getAllProducts = getAllProducts;
+exports.getAllProductsNames = getAllProductsNames;
+exports.deleteProductByName = deleteProductByName;

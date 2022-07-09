@@ -12,11 +12,6 @@ exports.validateProductFields = [
   check("description")
     .isLength({ min: 10 })
     .withMessage("The description must have at least 10 characters."),
-  check("category").not().isEmpty().withMessage("Your category field is empty"),
-  check("subcategory")
-    .not()
-    .isEmpty()
-    .withMessage("Your subcategory field is empty"),
   check("usage").not().isEmpty().withMessage("Your usage field is empty"),
   check("species").not().isEmpty().withMessage("Your species field is empty"),
   check("ingredients")
@@ -28,5 +23,5 @@ exports.validateProductFields = [
 exports.validateUserFields = [
   check("username").not().isEmpty(),
   check("password").isLength({ min: 6 }),
-  check("email").isEmail().withMessage("The email is not valid")
+  check("email").isEmail().withMessage("The email is not valid"),
 ];

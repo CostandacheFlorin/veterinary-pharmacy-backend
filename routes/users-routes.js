@@ -12,6 +12,7 @@ router.post(
   validator.validateUserFields,
   usersControllers.signup
 );
-
+router.get("/get-username-by-id/:userid", usersControllers.getUsernameByid);
+router.get("/get-all-users", usersControllers.getAllUsers);
 
 module.exports = router;
