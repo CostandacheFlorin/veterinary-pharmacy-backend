@@ -97,8 +97,7 @@ const getProductImageByName = async (req,res,next) => {
 
 const addProduct = async (req, res, next) => {
   const errors = validationResult(req);
-  console.log(req.file);
-  console.log(req.file.path);
+
 
   if (!errors.isEmpty()) {
     console.log(errors);
@@ -110,7 +109,7 @@ const addProduct = async (req, res, next) => {
   }
   const { name, price, description, usage, species, ingredients } = req.body;
 
-  console.log(ingredients);
+  
 
   const createdProduct = new Product({
     name,
@@ -142,10 +141,9 @@ const addProduct = async (req, res, next) => {
   res.status(201).json({ product: createdProduct });
 };
 
-const editProductByName = async (req, res, next) => {
+const editProduct = async (req, res, next) => {
   const errors = validationResult(req);
 
-  console.log(req.body.name);
 
   if (!errors.isEmpty()) {
     console.log(errors);
@@ -168,7 +166,7 @@ const editProductByName = async (req, res, next) => {
   let product;
 
   try {
-    product = await Product.findOne({ name: productid });
+    product = await Product.findOne({_id: productid});
   } catch (err) {
     const error = new HttpError(
       " Something went wrong while trying to edit the product, product not found",
@@ -177,9 +175,7 @@ const editProductByName = async (req, res, next) => {
     return next(error);
   }
 
-  console.log(name);
 
-  console.log(product);
 
   product.name = name;
   product.description = description;
@@ -206,9 +202,10 @@ const deleteProductById = async (req, res, next) => {
   const productid = req.params.productid;
 
   let product;
-
+  
   try {
     product = await Product.find(productid);
+    
   } catch (err) {
     const error = new HttpError(
       "Could not find the product you want to delete.",
@@ -216,6 +213,12 @@ const deleteProductById = async (req, res, next) => {
     );
     return next(error);
   }
+
+  console.log("ba");
+  console.log(product);
+  const imagePath = product.image;
+  console.log(imagePath);
+
 
   try {
     await product.remove();
@@ -227,6 +230,11 @@ const deleteProductById = async (req, res, next) => {
     return next(error);
   }
 
+  fs.unlink(imagePath, err => {
+    console.log(err);
+
+  })
+
   res.status(200).json({ message: "Product deleted." });
 };
 
@@ -236,6 +244,7 @@ const deleteProductByName = async (req, res, next) => {
   let product;
 
   try {
+    foundProduct = await Product.find({name: productname});
     product = await Product.find({ name: productname }).deleteOne().exec();
   } catch (err) {
     const error = new HttpError(
@@ -245,13 +254,23 @@ const deleteProductByName = async (req, res, next) => {
     return next(error);
   }
 
+
+  const imagePath = foundProduct[0].image;
+  console.log(imagePath);
+
+  fs.unlink(imagePath, err => {
+    console.log(err);
+
+  })
+
+
   res.status(200).json({ message: "Product deleted." });
 };
 
 exports.getProductByName = getProductByName;
 exports.addProduct = addProduct;
 exports.getProductImageByName = getProductImageByName;
-exports.editProductByName = editProductByName;
+exports.editProduct = editProduct;
 exports.deleteProductById = deleteProductById;
 exports.getAllProducts = getAllProducts;
 exports.getAllProductsNames = getAllProductsNames;

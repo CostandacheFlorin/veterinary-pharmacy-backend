@@ -58,6 +58,8 @@ const sendOrder = async (req, res, next) => {
       cancel_url: "http://localhost:3000/trimite-comanda",
     });
 
+  
+
     await createdOrder.save();
     console.log("aici");
 

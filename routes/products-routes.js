@@ -24,7 +24,7 @@ router.get(
   "/get-product-image-by-name/:productname",
   productsControllers.getProductImageByName
 );
-// router.use(checkAuth);
+router.use(checkAuth);
 
 router.post(
   "/add-product",
@@ -37,7 +37,7 @@ router.post(
 router.patch(
   "/edit-product/:productid",
   validator.validateProductFields,
-  productsControllers.editProductByName
+  productsControllers.editProduct
 );
 
 router.delete(
