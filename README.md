@@ -1,8 +1,13 @@
 # veterinary-pharmacy-backend
-backend licenta
+
+The backend for my veterinary pharmacy web app. 
+
+I developed a REST API to manage the data.
+
+Integrated STRIPE in order to manage the customers' payments.
 
 
-folder structure
+
 ![image](https://user-images.githubusercontent.com/96582084/175266732-40dcbc7f-c8b9-49a5-871f-95c77588a5be.png)
 
 
